@@ -20,6 +20,10 @@ LABELS = {
     'prequal': 'Are you pre-qualified for this loan?'
 
 }
+PQ_ENUM = {
+    'y': 'Yes',
+    'n': 'No'
+}
 FIELDS = [
     {
         'key': 'name',
@@ -36,7 +40,7 @@ FIELDS = [
     {
         'key': 'prequal',
         'type': 'enum',
-        'values': ['yes', 'no']
+        'values': ['y', 'n']
     }
 ]
 RATES = [
@@ -60,7 +64,7 @@ RATES = [
         'prequal': 'yes',
         'minterm': 0,
         'term': 15,
-        'min': 10000000,
+        'min': 1000000,
         'max': None,
         'rate': 2.05
     },
@@ -84,7 +88,7 @@ RATES = [
         'prequal': 'yes',
         'minterm': 15,
         'term': 20,
-        'min': 10000000,
+        'min': 1000000,
         'max': None,
         'rate': 2.62
     },
@@ -159,6 +163,7 @@ while not isInputComplete:
     fieldType = field['type']
     print LABELS[fieldName]
     s = raw_input()
+    #print "s: " + s
     if fieldType == 'string':
         if s is not None and not '' == s.strip():
             valueObject[fieldName] = s
@@ -166,11 +171,16 @@ while not isInputComplete:
             print INVALID_ENTRY
             continue
     elif fieldType == 'enum':
-        if s.lower() in field['values']:
-            valueObject[fieldName] = s.lower()
+        if s.lower()[0:1] in field['values']:
+            valueObject[fieldName] = PQ_ENUM[s.lower()[0:1]]
         else:
-            print INVALID_ENTRY
-            continue
+            try:
+                boolVal = bool(s)
+                pqKey = 'y' if boolVal else 'n'
+                valueObject[fieldName] = PQ_ENUM[pqKey]
+            except ValueError:
+                print INVALID_ENTRY
+                continue
     else:
         try:
             numVal = int(s)
@@ -187,14 +197,15 @@ borrower = valueObject['name']
 prequal = valueObject['prequal']
 principal = valueObject['principal']
 duration = valueObject['duration']
+pqCompare = prequal.lower()[0:1]
 for elem in RATES:
-#    print elem
-    if (elem['prequal'] == prequal and
+    pqVal = elem['prequal'].lower()[0:1]
+    if (pqVal == pqCompare and
             duration > elem['minterm'] and
                 duration <= elem['term'] and
-                    principal > elem['min']):
+                    principal >= elem['min']):
         if elem['max'] is not None:
-            if principal < elem['max']:
+            if principal <= elem['max']:
                 rateList.append(elem)
             else:
                 continue
@@ -205,13 +216,11 @@ if len(rateList) <= 0:
     TOTAL = None
 else:
     rateObj = rateList[0]
-
 if TOTAL is not None:
-    rate = Decimal(rateObj['rate']/100)
-    totalVal = principal * (1 + rate) ** duration
-    TOTAL = round(totalVal, 2)
+    r = rateObj['rate']
+    dec_r = Decimal(r) / 100
+    TOTAL = int(round(principal * ((1 + (dec_r / 12)) ** (12 * duration))))
 totalStr = 'None' if TOTAL is None else '$' + '{:,.2f}'.format(TOTAL)
-prequal = prequal.upper()
 REPORT += '\n'
 REPORT += HEADER_REPORT.format(borrower) + '\n'
 REPORT += HEADER_DIV + '\n'
