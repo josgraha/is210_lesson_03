@@ -19,7 +19,9 @@ isTimeValid = False
 
 DAY = ''
 TIME = ''
-SNOOZE = 'can'
+SNOOZE = False
+snoozeVal = 'can'
+
 
 while not isWeekdayValid:
     print PROMPT_DAY
@@ -28,7 +30,6 @@ while not isWeekdayValid:
         isWeekdayValid = True
         key = dayVal.lower()[0:3]
         DAY = DAY_MAP[key]
-        SNOOZE += '' if DAY in WEEKEND_DAYS else ' not'
         while not isTimeValid:
             print PROMPT_TIME
             timeVal = raw_input()
@@ -48,4 +49,8 @@ while not isWeekdayValid:
         print INVALID_INPUT
         continue
 
-print 'Next alarm is {}, at {}, you {} snooze on this day.'.format(DAY, TIME, SNOOZE)
+if DAY in WEEKEND_DAYS or timeIntVal < 600:
+    SNOOZE = True
+snoozeVal += '' if SNOOZE is True else ' not'
+
+print 'Next alarm is {}, at {}, you {} snooze on this day.'.format(DAY, TIME, snoozeVal)
